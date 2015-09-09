@@ -1,7 +1,7 @@
 {
   "Heavily damaged": "Heavily damaged",
-  "Prophet": "Prophet",
-  "Sortie Prophet": "Sortie Prophet",
+  "Prophet": "Battle detail analyzer",
+  "Sortie Prophet": "Battle detail analyzer",
   "Unknown Formation": "Unknown Formation",
   "Line Ahead": "Line Ahead",
   "Double Line": "Double Line",
@@ -15,19 +15,13 @@
   "Unknown Engagement": "Unknown Engagement",
   "Parallel Engagement": "Parallel Engagement",
   "Head-on Engagement": "Head-on Engagement",
-  "Crossing the T (Advantage)": "Crossing the T (Advantage)",
-  "Crossing the T (Disadvantage)": "Crossing the T (Disadvantage)",
+  "Crossing the T (Advantage)": "T Nice",
+  "Crossing the T (Disadvantage)": "T Shit",
   "Unknown": "Unknown",
   "Sortie Fleet": "Sortie Fleet",
   "Enemy Vessel": "Enemy Vessel",
   "HP": "HP",
   "PvP": "PvP",
   "Admiral": "Admiral",
-  "Join fleet": "Join fleet",
-  "Unknown FC": "Unknown FC",
-  "AS+": "AS+",
-  "AS": "AS",
-  "Air Parity": "Air Parity",
-  "Air Incapability": "Air Incapability",
-  "Air Denial": "Air Denial"
+  "Join fleet": "Join fleet"
 }

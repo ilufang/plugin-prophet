@@ -36,13 +36,60 @@
   border-color: #375a7f;
   color: #ffffff;
 }
-#prophet .prophet-info-content {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+
+
+
+#prophet .line {
+  display: block;
 }
-#prophet .navigation-bar-airplane {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+
+#prophet .shiptag {
+  display: inline-block;
+  font-weight: bold;
+  color: white;
+  margin: 2px;
+  padding: 0px 3px;
+  border-radius: 4px;
+  background: #666666;
+}
+
+#prophet .not-damaged {
+  background: #66ff66;
+  color: black;
+}
+
+#prophet .lightly-damaged {
+  background: #ffff66;
+  color: black;
+}
+
+#prophet .moderately-damaged {
+  background: #ffb266;
+  color: black;
+}
+
+#prophet .heavily-damaged {
+  background: #ff6666;
+  color: black;
+}
+
+#prophet .completely-damaged {
+  background: #666666;
+  color: #66ccff;
+}
+
+#prophet .allied {
+  color: #66ff66;
+}
+
+#prophet .enemy {
+  color: #ff6666;
+}
+
+#prophet table {
+  width: 100%;
+}
+
+#prophet td {
+  vertical-align: top;
 }
