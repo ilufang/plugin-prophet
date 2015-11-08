@@ -86,6 +86,22 @@
   color: #ff6666;
 }
 
+#prophet .at_follow {
+  opacity: 0.0;
+}
+
+/*
+#prophet .dam_crit {
+  color: yellow;
+  font-weight: bold;
+}
+*/
+
+
+#prophet .dam_miss {
+  color: #999;
+}
+
 #prophet table {
   width: 100%;
 }

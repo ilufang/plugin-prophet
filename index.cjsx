@@ -265,6 +265,17 @@ getHpClass = (nowHp, maxHp) ->
 		else
 			'shiptag not-damaged'
 
+getDamageClass = (damage) ->
+	switch damage%1
+		when 0.1
+			'dam_crit'
+		else
+			if damage <= 0
+				'dam_miss'
+			else
+				'dam'
+
+
 
 getResult = (damageHp, nowHp) ->
 	friendDamage = 0.0
@@ -300,46 +311,68 @@ getResult = (damageHp, nowHp) ->
 	tmpResult
 
 koukuAttack = (afterHp, kouku) ->
-	battledetails.push <Alert>{__("Aerial Battle")}: {airsuprem[kouku.api_stage1.api_disp_seiku]} {__("Bauxite Loss")} {(kouku.api_stage1.api_f_lostcount+kouku.api_stage2.api_f_lostcount)*5}</Alert>
+	total_lost = 0
 	allied_area = []
-	allied_area.push <span className="line">{__("Allied Planes")} {kouku.api_stage1.api_f_count}</span>
-	allied_area.push <span className="line">{__("Shotdown")} {kouku.api_stage1.api_f_lostcount + kouku.api_stage2.api_f_lostcount}</span>
-	if kouku.api_stage3.api_fdam?
+	if kouku.api_stage1?
+		allied_area.push <span className="line">{__("Allied Planes")} {kouku.api_stage1.api_f_count}</span>
+		allied_area.push <span className="line">{__("Fighter Shotdown")} {kouku.api_stage1.api_f_lostcount}</span>
+		total_lost += kouku.api_stage1.api_f_lostcount
+
+	if kouku.api_stage2?
+		allied_area.push <span className="line">{__("Allied Bombers")} {kouku.api_stage2.api_f_count}</span>
+		allied_area.push <span className="line">{__("Ship Shotdown")} {kouku.api_stage2.api_f_lostcount}</span>
+		total_lost += kouku.api_stage2.api_f_lostcount
+
+	if kouku.api_stage3?
 		for damage, i in kouku.api_stage3.api_fdam
+			damClass = getDamageClass(damage)
 			damage = Math.floor(damage)
 			continue if damage <= 0
 			afterHp[i - 1] -= damage
-			allied_area.push <div><span className={getHpClass afterHp[i-1], maxHp[i-1]}>{shipName[i-1]}</span> -{damage}</div>
+			allied_area.push <div><span className={getHpClass afterHp[i-1], maxHp[i-1]}>{shipName[i-1]}</span><span className={damClass}> -{damage}</span></div>
 
 	enemy_area = []
-	enemy_area.push <span className="line">{__("Enemy Planes")} {kouku.api_stage1.api_e_count}</span>
-	enemy_area.push <span className="line">{__("Shotdown")} {kouku.api_stage1.api_e_lostcount + kouku.api_stage2.api_e_lostcount}</span>
-	if kouku.api_stage3.api_edam?
+
+	if kouku.api_stage1?
+		enemy_area.push <span className="line">{__("Enemy Planes")} {kouku.api_stage1.api_e_count}</span>
+		enemy_area.push <span className="line">{__("Fighter Shotdown")} {kouku.api_stage1.api_e_lostcount}</span>
+
+	if kouku.api_stage2?
+		enemy_area.push <span className="line">{__("Enemy Bombers")} {kouku.api_stage2.api_e_count}</span>
+		enemy_area.push <span className="line">{__("Ship Shotdown")} {kouku.api_stage2.api_e_lostcount}</span>
+
+	if kouku.api_stage3?
 		for damage, i in kouku.api_stage3.api_edam
+			damClass = getDamageClass(damage)
 			damage = Math.floor(damage)
 			continue if damage <= 0
 			afterHp[i + 5] -= damage
-			enemy_area.push <div><span className={getHpClass afterHp[i+5], maxHp[i+5]}>{shipName[i+5]}</span> -{damage}</div>
+			enemy_area.push <div><span className={getHpClass afterHp[i+5], maxHp[i+5]}>{shipName[i+5]}</span><span className={damClass}> -{damage}</span></div>
 
-	battledetails.push <table><tr><td>{allied_area}</td><td>{enemy_area}</td></tr></table>
+	if kouku.api_stage1?
+		battledetails.push <Alert>{__("Aerial Battle")}: {airsuprem[kouku.api_stage1.api_disp_seiku]} {__("Bauxite Loss")} {total_lost*5}</Alert>
+		battledetails.push <table><tr><td>{allied_area}</td><td>{enemy_area}</td></tr></table>
+
 	afterHp
 
 koukuAttackCombinedPart = (afterHp, kouku) ->
 	allied_area = []
-	if kouku.api_stage3_combined.api_fdam?
+	if kouku.api_stage3_combined?
 		for damage, i in kouku.api_stage3_combined.api_fdam
+			damClass = getDamageClass(damage)
 			damage = Math.floor(damage)
 			continue if damage <= 0
 			afterHp[i - 1] -= damage
-			allied_area.push <div><span className={getHpClass afterHp[i-1], combinedMaxHp[i-1]}>{combinedName[i-1]}</span> -{damage}</div>
+			allied_area.push <div><span className={getHpClass afterHp[i-1], combinedMaxHp[i-1]}>{combinedName[i-1]}</span><span className={damClass}> -{damage}</span></div>
 
 	enemy_area = []
-	if kouku.api_stage3_combined.api_edam?
+	if kouku.api_stage3_combine?
 		for damage, i in kouku.api_stage3_combined.api_edam
+			damClass = getDamageClass(damage)
 			damage = Math.floor(damage)
 			continue if damage <= 0
 			afterHp[i + 5] -= damage
-			enemy_area.push <div><span className={getHpClass afterHp[i+5], maxHp[i+5]}>{shipName[i+5]}</span> -{damage}</div>
+			enemy_area.push <div><span className={getHpClass afterHp[i+5], maxHp[i+5]}>{shipName[i+5]}</span><span className={damClass}> -{damage}</span></div>
 
 	battledetails.push <table><tr><td>{allied_area}</td><td>{enemy_area}</td></tr></table>
 	afterHp
@@ -350,18 +383,20 @@ openAttack = (afterHp, openingAttack) ->
 	allied_area = []
 	if openingAttack.api_fdam?
 		for damage, i in openingAttack.api_fdam
+			damClass = getDamageClass(damage)
 			damage = Math.floor(damage)
 			continue if damage <= 0
 			afterHp[i - 1] -= damage
-			allied_area.push <div><span className={getHpClass afterHp[i-1], maxHp[i-1]}>{shipName[i-1]}</span> -{damage}</div>
+			allied_area.push <div><span className={getHpClass afterHp[i-1], maxHp[i-1]}>{shipName[i-1]}</span><span className={damClass}> -{damage}</span></div>
 
 	enemy_area = []
 	if openingAttack.api_edam?
 		for damage, i in openingAttack.api_edam
+			damClass = getDamageClass(damage)
 			damage = Math.floor(damage)
 			continue if damage <= 0
 			afterHp[i + 5] -= damage
-			enemy_area.push <div><span className={getHpClass afterHp[i+5], maxHp[i+5]}>{shipName[i+5]}</span> -{damage}</div>
+			enemy_area.push <div><span className={getHpClass afterHp[i+5], maxHp[i+5]}>{shipName[i+5]}</span><span className={damClass}> -{damage}</span></div>
 
 	battledetails.push <table><tr><td>{allied_area}</td><td>{enemy_area}</td></tr></table>
 	afterHp
@@ -373,18 +408,20 @@ combinedOpenAttack = (combinedAfterHp, afterHp, openingAttack) ->
 	allied_area = []
 	if openingAttack.api_fdam?
 		for damage, i in openingAttack.api_fdam
+			damClass = getDamageClass(damage)
 			damage = Math.floor(damage)
 			continue if damage <= 0
 			combinedAfterHp[i - 1] -= damage
-			allied_area.push <div><span className={getHpClass combinedAfterHp[i-1], combinedMaxHp[i-1]}>{combinedName[i-1]}</span> -{damage}</div>
+			allied_area.push <div><span className={getHpClass combinedAfterHp[i-1], combinedMaxHp[i-1]}>{combinedName[i-1]}</span><span className={damClass}> -{damage}</span></div>
 
 	enemy_area = []
 	if openingAttack.api_edam?
 		for damage, i in openingAttack.api_edam
+			damClass = getDamageClass(damage)
 			damage = Math.floor(damage)
 			continue if damage <= 0
 			afterHp[i + 5] -= damage
-			enemy_area.push <div><span className={getHpClass afterHp[i+5], maxHp[i+5]}>{shipName[i+5]}</span> -{damage}</div>
+			enemy_area.push <div><span className={getHpClass afterHp[i+5], maxHp[i+5]}>{shipName[i+5]}</span><span className={damClass}> -{damage}</span></div>
 
 	battledetails.push <table><tr><td>{allied_area}</td><td>{enemy_area}</td></tr></table>
 	[combinedAfterHp, afterHp]
@@ -395,24 +432,26 @@ hougekiAttack = (afterHp, hougeki, description) ->
 	for damageFrom, i in hougeki.api_at_list
 		continue if damageFrom == -1
 		damageTo = -1
-		accumulative_damage = 0;
 		for damage, j in hougeki.api_damage[i]
+			damClass = getDamageClass(damage)
 			damage = Math.floor(damage)
+			continue if damage<0
 			damageTo = hougeki.api_df_list[i][j]
-			continue if damage <= 0
 			afterHp[damageTo - 1] -= damage
-			accumulative_damage += damage
-		if damageTo>6
-			# Allied To Enemy
-			attackType = ""
-			if hougeki.api_at_type
-				attackType = attackMeth[hougeki.api_at_type[i]]
-			hg_proc.push <tr><td><span className="shiptag allied" >{shipName[damageFrom-1]}</span> {attackType}</td><td><span className={getHpClass afterHp[damageTo-1], maxHp[damageTo-1]}>{shipName[damageTo-1]}</span> -{accumulative_damage}</td><td></td></tr>
-		else
-			attackType = ""
-			if hougeki.api_at_type
-				attackType = attackMeth[hougeki.api_at_type[i]]
-			hg_proc.push <tr><td><span className="shiptag enemy">{shipName[damageFrom-1]}</span> {attackType}</td><td></td><td><span className={getHpClass afterHp[damageTo-1], maxHp[damageTo-1]}>{shipName[damageTo-1]}</span> -{accumulative_damage}</td></tr>
+			consecClass = "at_first"
+			if j>0
+				consecClass = "at_follow"
+			if damageTo>6
+				# Allied To Enemy
+				attackType = ""
+				if hougeki.api_at_type
+					attackType = attackMeth[hougeki.api_at_type[i]]
+				hg_proc.push <tr><td className={consecClass}><span className="shiptag allied" >{shipName[damageFrom-1]}</span> {attackType}</td><td><span className={getHpClass afterHp[damageTo-1], maxHp[damageTo-1]}>{shipName[damageTo-1]}</span><span className={damClass}> -{damage}</span></td><td></td></tr>
+			else
+				attackType = ""
+				if hougeki.api_at_type
+					attackType = attackMeth[hougeki.api_at_type[i]]
+				hg_proc.push <tr><td className={consecClass}><span className="shiptag enemy">{shipName[damageFrom-1]}</span> {attackType}</td><td></td><td><span className={getHpClass afterHp[damageTo-1], maxHp[damageTo-1]}>{shipName[damageTo-1]}</span><span className={damClass}> -{damage}</span></td></tr>
 
 	battledetails.push <table>{hg_proc}</table>
 	afterHp
@@ -423,27 +462,29 @@ combinedhougekiAttack = (combinedAfterHp, afterHp, hougeki, description) ->
 	for damageFrom, i in hougeki.api_at_list
 		continue if damageFrom == -1
 		damageTo = -1
-		accumulative_damage = 0;
 		for damage, j in hougeki.api_damage[i]
+			damClass = getDamageClass(damage)
 			damage = Math.floor(damage)
+			continue if damage<0
 			damageTo = hougeki.api_df_list[i][j]
-			continue if damage <= 0
 			if damageTo - 1 < 6
 				combinedAfterHp[damageTo - 1] -= damage
 			else
 				afterHp[damageTo - 1] -= damage
-			accumulative_damage += damage
-		if damageTo>6
-			# Allied To Enemy
-			attackType = ""
-			if hougeki.api_at_type
-				attackType = attackMeth[hougeki.api_at_type[i]]
-			hg_proc.push <tr><td><span className="shiptag allied" >{combinedName[damageFrom-1]}</span> {attackType}</td><td><span className={getHpClass afterHp[damageTo-1], maxHp[damageTo-1]}>{shipName[damageTo-1]}</span> -{accumulative_damage}</td><td></td></tr>
-		else
-			attackType = ""
-			if hougeki.api_at_type
-				attackType = attackMeth[hougeki.api_at_type[i]]
-			hg_proc.push <tr><td><span className="shiptag enemy">{shipName[damageFrom-1]}</span> {attackType}</td><td></td><td><span className={getHpClass combinedAfterHp[damageTo-1], combinedMaxHp[damageTo-1]}>{combinedName[damageTo-1]}</span> -{accumulative_damage}</td></tr>
+			consecClass = "at_first"
+			if j>0
+				consecClass = "at_follow"
+			if damageTo>6
+				# Allied To Enemy
+				attackType = ""
+				if hougeki.api_at_type
+					attackType = attackMeth[hougeki.api_at_type[i]]
+				hg_proc.push <tr><td className={consecClass}><span className="shiptag allied" >{combinedName[damageFrom-1]}</span> {attackType}</td><td><span className={getHpClass afterHp[damageTo-1], maxHp[damageTo-1]}>{shipName[damageTo-1]}</span><span className={damClass}> -{damage}</span></td><td></td></tr>
+			else
+				attackType = ""
+				if hougeki.api_at_type
+					attackType = attackMeth[hougeki.api_at_type[i]]
+				hg_proc.push <tr><td className={consecClass}><span className="shiptag enemy">{shipName[damageFrom-1]}</span> {attackType}</td><td></td><td><span className={getHpClass combinedAfterHp[damageTo-1], combinedMaxHp[damageTo-1]}>{combinedName[damageTo-1]}</span><span className={damClass}> -{damage}</span></td></tr>
 
 	battledetails.push <table>{hg_proc}</table>
 	[combinedAfterHp, afterHp]
@@ -454,18 +495,20 @@ raigekiAttack = (afterHp, raigeki) ->
 	allied_area = []
 	if raigeki.api_fdam?
 		for damage, i in raigeki.api_fdam
+			damClass = getDamageClass(damage)
 			damage = Math.floor(damage)
 			continue if damage <= 0
 			afterHp[i - 1] -= damage
-			allied_area.push <div><span className={getHpClass afterHp[i-1], maxHp[i-1]}>{shipName[i-1]}</span> -{damage}</div>
+			allied_area.push <div><span className={getHpClass afterHp[i-1], maxHp[i-1]}>{shipName[i-1]}</span><span className={damClass}> -{damage}</span></div>
 
 	enemy_area = []
 	if raigeki.api_edam?
 		for damage, i in raigeki.api_edam
+			damClass = getDamageClass(damage)
 			damage = Math.floor(damage)
 			continue if damage <= 0
 			afterHp[i + 5] -= damage
-			enemy_area.push <div><span className={getHpClass afterHp[i+5], maxHp[i+5]}>{shipName[i+5]}</span> -{damage}</div>
+			enemy_area.push <div><span className={getHpClass afterHp[i+5], maxHp[i+5]}>{shipName[i+5]}</span><span className={damClass}> -{damage}</span></div>
 
 	battledetails.push <table><tr><td>{allied_area}</td><td>{enemy_area}</td></tr></table>
 	afterHp
@@ -476,18 +519,20 @@ combinedRaigekiAttack = (combinedAfterHp, afterHp, raigeki) ->
 	allied_area = []
 	if raigeki.api_fdam?
 		for damage, i in raigeki.api_fdam
+			damClass = getDamageClass(damage)
 			damage = Math.floor(damage)
 			continue if damage <= 0
 			combinedAfterHp[i - 1] -= damage
-			allied_area.push <div><span className={getHpClass combinedAfterHp[i-1], combinedMaxHp[i-1]}>{combinedName[i-1]}</span> -{damage}</div>
+			allied_area.push <div><span className={getHpClass combinedAfterHp[i-1], combinedMaxHp[i-1]}>{combinedName[i-1]}</span><span className={damClass}> -{damage}</span></div>
 
 	enemy_area = []
 	if raigeki.api_edam?
 		for damage, i in raigeki.api_edam
+			damClass = getDamageClass(damage)
 			damage = Math.floor(damage)
 			continue if damage <= 0
 			afterHp[i + 5] -= damage
-			enemy_area.push <div><span className={getHpClass afterHp[i+5], maxHp[i+5]}>{shipName[i+5]}</span> -{damage}</div>
+			enemy_area.push <div><span className={getHpClass afterHp[i+5], maxHp[i+5]}>{shipName[i+5]}</span><span className={damClass}> -{damage}</span></div>
 
 	battledetails.push <table><tr><td>{allied_area}</td><td>{enemy_area}</td></tr></table>
 	[combinedAfterHp, afterHp]
@@ -502,11 +547,12 @@ supportAttack = (afterHp, damages) ->
 #	console.log damages
 	battledetails.push <Alert>{__("Expedition Support Fire")}</Alert>
 	for damage, i in damages
+		damClass = getDamageClass(damage)
 		damage = Math.floor(damage)
 		continue if damage <= 0
 		continue if i > 6
 		afterHp[i + 5] -= damage
-		battledetails.push <div><span className={getHpClass afterHp[i+5], maxHp[i+5]}>{shipName[i+5]}</span> -{damage}</div>
+		battledetails.push <div><span className={getHpClass afterHp[i+5], maxHp[i+5]}>{shipName[i+5]}</span><span className={damClass}> -{damage}</span></div>
 	afterHp
 
 formationFlag = false
@@ -570,6 +616,7 @@ module.exports =
 					battledetails = []
 					enemyEquips = []
 					enemyName = "" + body.api_maparea_id + "-" + body.api_mapinfo_no + String.fromCharCode(64+body.api_no)
+					enemyName_buf = enemyName
 					jsonId = null
 					flag = true
 					shipLv[i] = -1 for i in [0..11]
@@ -604,6 +651,7 @@ module.exports =
 				when '/kcsapi/api_req_map/next'
 					enemyEquips = []
 					enemyName = "" + body.api_maparea_id + "-" + body.api_mapinfo_no + String.fromCharCode(64+body.api_no)
+					enemyName_buf = enemyName
 					battledetails = []
 					jsonId = null
 					flag = true
@@ -636,13 +684,13 @@ module.exports =
 					if body.api_formation?
 						enemyFormation = body.api_formation[1]
 						enemyIntercept = body.api_formation[2]
-					if body.api_kouku? && body.api_kouku.api_stage3?
+					if body.api_kouku?
 						afterHp = koukuAttack afterHp, body.api_kouku
-					if body.api_kouku? && body.api_kouku.api_stage3_combined?
+					if body.api_kouku?
 						combinedAfterHp = koukuAttackCombinedPart combinedAfterHp, body.api_kouku
-					if body.api_kouku2? && body.api_kouku2.api_stage3?
+					if body.api_kouku2?
 						afterHp = koukuAttack afterHp, body.api_kouku2
-					if body.api_kouku2? && body.api_kouku2.api_stage3_combined?
+					if body.api_kouku2?
 						combinedAfterHp = koukuAttackCombinedPart combinedAfterHp, body.api_kouku2
 					damageHp = getDamage damageHp, nowHp, afterHp, 0
 					combinedDamageHp = getDamage combinedDamageHp, combinedNowHp, combinedAfterHp, 0
@@ -668,9 +716,9 @@ module.exports =
 					if body.api_formation?
 						enemyFormation = body.api_formation[1]
 						enemyIntercept = body.api_formation[2]
-					if body.api_kouku.api_stage3?
+					if body.api_kouku?
 						afterHp = koukuAttack afterHp, body.api_kouku
-					if body.api_kouku? && body.api_kouku.api_stage3_combined?
+					if body.api_kouku?
 						combinedAfterHp = koukuAttackCombinedPart combinedAfterHp, body.api_kouku
 					if body.api_support_info?
 						if body.api_support_info.api_support_airatack?
@@ -764,7 +812,7 @@ module.exports =
 					if body.api_formation?
 						enemyFormation = body.api_formation[1]
 						enemyIntercept = body.api_formation[2]
-					if body.api_kouku.api_stage3?
+					if body.api_kouku?
 						afterHp = koukuAttack afterHp, body.api_kouku
 					if body.api_kouku? && body.api_kouku.api_stage3_combined?
 						combinedAfterHp = koukuAttackCombinedPart combinedAfterHp, body.api_kouku
@@ -795,7 +843,7 @@ module.exports =
 					flag = true
 					result = body.api_win_rank
 					notify enemyName + "战斗结束: " + result
-					enemyName = body.api_enemy_info.api_deck_name
+					enemyName = enemyName_buf + " " + body.api_enemy_info.api_deck_name
 					tmpShip = " "
 					for tmpHp, i in nowHp
 						if i < 6 && tmpHp < (maxHp[i] * 0.2500001)
@@ -837,9 +885,9 @@ module.exports =
 						jsonContent.hp.splice 0, 6
 						enemyFormation = jsonContent.formation
 						enemyTyku = jsonContent.totalTyku
-					if body.api_kouku.api_stage3?
+					if body.api_kouku?
 						afterHp = koukuAttack afterHp, body.api_kouku
-					if body.api_kouku? && body.api_kouku.api_stage3_combined?
+					if body.api_kouku?
 						combinedAfterHp = koukuAttackCombinedPart combinedAfterHp, body.api_kouku
 					if body.api_support_info?
 						if body.api_support_info.api_support_airatack?
@@ -916,9 +964,9 @@ module.exports =
 						jsonContent.hp.splice 0, 6
 						enemyFormation = jsonContent.formation
 						enemyTyku = jsonContent.totalTyku
-					if body.api_kouku? && body.api_kouku.api_stage3?
+					if body.api_kouku?
 						afterHp = koukuAttack afterHp, body.api_kouku
-					if body.api_kouku2? && body.api_kouku2.api_stage3?
+					if body.api_kouku2?
 						afterHp = koukuAttack afterHp, body.api_kouku2
 					damageHp = getDamage damageHp, nowHp, afterHp, 0
 					result = getResult damageHp, nowHp
@@ -952,7 +1000,7 @@ module.exports =
 						enemyFormation = body.api_formation[1]
 						enemyIntercept = body.api_formation[2]
 					afterHp = Object.clone nowHp
-					if body.api_kouku.api_stage3?
+					if body.api_kouku?
 						afterHp = koukuAttack afterHp, body.api_kouku
 					if body.api_opening_atack?
 						afterHp = openAttack afterHp, body.api_opening_atack
@@ -964,7 +1012,7 @@ module.exports =
 						afterHp = hougekiAttack afterHp, body.api_hougeki3, __("3rd Shelling")
 					if body.api_raigeki?
 						afterHp = raigekiAttack afterHp, body.api_raigeki
-					damageHp = getDamage damageHp, nowHp, afterHp, 1
+					damageHp = getDamage damageHp, nowHp, afterHp, 0
 					result = getResult damageHp, nowHp
 					nowHp = Object.clone afterHp
 
@@ -973,7 +1021,7 @@ module.exports =
 					nowHp = Object.clone afterHp
 					if body.api_hougeki?
 						afterHp = hougekiAttack afterHp, body.api_hougeki, __("Night Combat")
-					damageHp = getDamage damageHp, nowHp, afterHp, 1
+					damageHp = getDamage damageHp, nowHp, afterHp, 0
 					result = getResult damageHp, nowHp
 					nowHp = Object.clone afterHp
 
@@ -987,7 +1035,7 @@ module.exports =
 					flag = true
 					result = body.api_win_rank
 					notify enemyName + "战斗结束: " + result
-					enemyName = body.api_enemy_info.api_deck_name
+					enemyName = enemyName_buf + " " + body.api_enemy_info.api_deck_name
 					tmpShip = " "
 					for tmpHp, i in nowHp
 						if i < 6 && tmpHp < (maxHp[i] * 0.2500001)
@@ -1078,7 +1126,7 @@ module.exports =
 			window.addEventListener 'game.response', @handleResponse
 
 		render: ->
-			if layout == 'horizonal' || window.doubleTabbed
+			if layout != 'vertical' || window.doubleTabbed
 				<div>
 					<link rel="stylesheet" href={join(relative(ROOT, __dirname), 'assets', 'prophet.css')} />
 					<Alert>
